@@ -27,6 +27,7 @@ __all__ = [
     "order",
     "size",
     "node_edge_centrality",
+    "degree_centrality",
 ]
 
 
@@ -238,4 +239,28 @@ def node_edge_centrality(
     https://doi.org/10.1038/s42005-021-00704-2
     """
     _, c = xgi.node_edge_centrality(net, f, g, phi, psi, max_iter, tol)
+    return {e: c[e] for e in c if e in bunch}
+
+def degree_centrality(net, bunch):
+    """Compute the degree centrality of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities.
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    c = xgi.degree_centrality(net, target="edge")
     return {e: c[e] for e in c if e in bunch}

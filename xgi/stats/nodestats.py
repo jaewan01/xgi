@@ -34,6 +34,7 @@ __all__ = [
     "z_eigenvector_centrality",
     "node_edge_centrality",
     "katz_centrality",
+    "degree_centrality"
 ]
 
 
@@ -343,7 +344,6 @@ def clique_eigenvector_centrality(net, bunch, tol=1e-6):
     """
     c = xgi.clique_eigenvector_centrality(net, tol)
     return {n: c[n] for n in c if n in bunch}
-
 
 def h_eigenvector_centrality(net, bunch, max_iter=10, tol=1e-6):
     """Compute the H-eigenvector centrality of a hypergraph.
@@ -657,3 +657,27 @@ def local_face_edit_simpliciality(net, bunch, min_size=2, exclude_min_size=True)
             sh = xgi.subhypergraph(net, nodes=nbrs)
             s[n] = xgi.face_edit_simpliciality(sh, min_size, exclude_min_size)
     return s
+
+def degree_centrality(net, bunch):
+    """Compute the degree centrality of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities.
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    c = xgi.degree_centrality(net, target="node")
+    return {n: c[n] for n in c if n in bunch}

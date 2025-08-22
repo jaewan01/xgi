@@ -7,6 +7,8 @@ import numpy as np
 from numpy.linalg import norm
 from scipy.sparse.linalg import eigsh
 
+import pdb
+
 from ..convert import to_line_graph
 from ..exception import XGIError
 from ..linalg import clique_motif_matrix, incidence_matrix
@@ -22,8 +24,8 @@ __all__ = [
     "line_vector_centrality",
     "katz_centrality",
     "uniform_h_eigenvector_centrality",
+    "degree_centrality"
 ]
-
 
 def clique_eigenvector_centrality(H, tol=1e-6):
     """Compute the clique motif eigenvector centrality of a hypergraph.
@@ -65,7 +67,6 @@ def clique_eigenvector_centrality(H, tol=1e-6):
     # multiply by the sign to try and enforce positivity
     v = np.sign(v[0]) * v / norm(v, 1)
     return {node_dict[n]: v[n].item() for n in node_dict}
-
 
 def node_edge_centrality(
     H,
@@ -561,3 +562,39 @@ def apply(H, x, g=lambda v, e: np.sum(v[list(e)])):
         for shift in range(len(edge)):
             new_x[edge[shift]] += g(x, edge[shift + 1 :] + edge[:shift])
     return new_x
+
+def degree_centrality(H, target="node"):
+    """Compute the degree centrality of a hypergraph.
+
+    Parameters
+    ----------
+    H : Hypergraph
+        The hypergraph of interest.
+    target : str
+        The target of centrality computation. By default, "node".
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities. The
+        centralities are 1-normalized.
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    if target not in ["node", "edge"]:
+        raise XGIError("Target must be either 'node' or 'edge'.")
+
+    if target == "node":
+        degrees = H.degree()
+        sum_degrees = sum(degrees.values())
+        centrality = {n: d / sum_degrees for n, d in degrees.items()}
+    if target == "edge":
+        degrees = H.edges.size().asdict()
+        sum_degrees = sum(degrees.values())
+        centrality = {e: d / sum_degrees for e, d in degrees.items()}
+
+    return centrality
