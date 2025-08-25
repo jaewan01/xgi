@@ -34,7 +34,8 @@ __all__ = [
     "z_eigenvector_centrality",
     "node_edge_centrality",
     "katz_centrality",
-    "degree_centrality"
+    "degree_centrality",
+    "neighbor_degree_centrality"
 ]
 
 
@@ -680,4 +681,23 @@ def degree_centrality(net, bunch):
     https://doi.org/10.1016/S0378-8733(96)00300-0
     """
     c = xgi.degree_centrality(net, target="node")
+    return {n: c[n] for n in c if n in bunch}
+
+def neighbor_degree_centrality(net, bunch):
+    """Compute the neighbor-degree centrality of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities.
+
+    """
+    c = xgi.neighbor_degree_centrality(net)
     return {n: c[n] for n in c if n in bunch}

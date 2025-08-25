@@ -18,12 +18,18 @@ if __name__ == "__main__":
         time_start = time.time()
         if args.measure == "degree":
             centralities = hypergraph.nodes.degree_centrality.asnumpy()
+        elif args.measure == "neighbor_degree":
+            centralities = hypergraph.nodes.neighbor_degree_centrality.asnumpy()
+        else:
+            raise XGIError("Invalid centrality measure for node: ", args.measure)
         time_end = time.time()
         print(f"Time taken for node_{args.measure}: {time_end - time_start} seconds")
     else:
         time_start = time.time()
         if args.measure == "degree":
             centralities = hypergraph.edges.degree_centrality.asnumpy()
+        else:
+            raise XGIError("Invalid centrality measure for edge: ", args.measure)
         time_end = time.time()
         print(f"Time taken for edge_{args.measure}: {time_end - time_start} seconds")
 

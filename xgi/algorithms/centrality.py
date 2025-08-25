@@ -24,7 +24,8 @@ __all__ = [
     "line_vector_centrality",
     "katz_centrality",
     "uniform_h_eigenvector_centrality",
-    "degree_centrality"
+    "degree_centrality",
+    "neighbor_degree_centrality"
 ]
 
 def clique_eigenvector_centrality(H, tol=1e-6):
@@ -596,5 +597,33 @@ def degree_centrality(H, target="node"):
         degrees = H.edges.size().asdict()
         sum_degrees = sum(degrees.values())
         centrality = {e: d / sum_degrees for e, d in degrees.items()}
+
+    return centrality
+
+def neighbor_degree_centrality(H):
+    """Compute the neighbor-degree centrality of a hypergraph.
+
+    Parameters
+    ----------
+    H : Hypergraph
+        The hypergraph of interest.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities. The
+        centralities are 1-normalized.
+
+    """
+
+    nodes = H.nodes
+    centrality = dict()
+
+    for n in nodes:
+        neighbors = H.nodes.neighbors(n)
+        centrality[n] = len(neighbors)
+    
+    sum_centrality = sum(centrality.values())
+    centrality = {n: v / sum_centrality for n, v in centrality.items()}
 
     return centrality
