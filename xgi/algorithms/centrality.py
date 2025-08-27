@@ -9,7 +9,7 @@ from scipy.sparse.linalg import eigsh
 
 import pdb
 
-from ..convert import to_line_graph
+from ..convert import to_line_graph, to_bipartite_graph
 from ..exception import XGIError
 from ..linalg import clique_motif_matrix, incidence_matrix
 from ..utils import convert_labels_to_integers, pairwise_incidence, ttsv1, ttsv2
@@ -25,7 +25,10 @@ __all__ = [
     "katz_centrality",
     "uniform_h_eigenvector_centrality",
     "degree_centrality",
-    "neighbor_degree_centrality"
+    "neighbor_degree_centrality",
+    "closeness_centrality",
+    "betweenness_centrality",
+    "harmonic_centrality"
 ]
 
 def clique_eigenvector_centrality(H, tol=1e-6):
@@ -627,3 +630,120 @@ def neighbor_degree_centrality(H):
     centrality = {n: v / sum_centrality for n, v in centrality.items()}
 
     return centrality
+
+def closeness_centrality(H, target="node"):
+    """Compute the closeness centrality of a hypergraph. 
+
+    Parameters
+    ----------
+    H : xgi.Hypergraph
+        The hypergraph of interest.
+    target : str
+        The target of centrality computation. By default, "node".
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities. The
+        centralities are 1-normalized.
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    if target not in ["node", "edge"]:
+        raise XGIError("Target must be either 'node' or 'edge'.")
+    
+    if not is_connected(H):
+        raise XGIError("This method is not defined for disconnected hypergraphs.")
+
+    B, itn, ite = to_bipartite_graph(H, index=True)
+
+    cc_bi = nx.closeness_centrality(B)
+
+    if target == "node":
+        centrality = {n: cc_bi[i] for i, n in itn.items()}
+    else:
+        centrality = {e: cc_bi[i] for i, e in ite.items()}
+
+    sum_centrality = sum(centrality.values())
+    return {k: v / sum_centrality for k,v in centrality.items()}
+
+def betweenness_centrality(H, target="node"):
+    """Compute the betweenness centrality of a hypergraph.
+
+    Parameters
+    ----------
+    H : xgi.Hypergraph
+        The hypergraph of interest.
+    target : str
+        The target of centrality computation. By default, "node".
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node (or edge) IDs and values are centralities.
+        The centralities are 1-normalized (sum to 1).
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    if target not in ["node", "edge"]:
+        raise XGIError("Target must be either 'node' or 'edge'.")
+
+    if not is_connected(H):
+        raise XGIError("This method is not defined for disconnected hypergraphs.")
+
+    B, itn, ite = to_bipartite_graph(H, index=True)
+
+    bc_bi = nx.betweenness_centrality(B)
+
+    if target == "node":
+        centrality = {n: bc_bi[i] for i, n in itn.items()}
+    else:
+        centrality = {e: bc_bi[i] for i, e in ite.items()}
+
+    sum_centrality = sum(centrality.values())
+    return {k: v / sum_centrality for k, v in centrality.items()}
+
+def harmonic_centrality(H, target="node"):
+    """Compute the harmonic centrality of a hypergraph.
+    
+    Parameters
+    ----------
+    H : xgi.Hypergraph
+        The hypergraph of interest.
+    target : str
+        The target of centrality computation. By default, "node".
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node (or edge) IDs and values are centralities.
+        The centralities are 1-normalized (sum to 1).
+
+    References
+    ----------
+    Axioms for Centrality,
+    P. Boldi, S. Vigna, 
+    https://doi.org/10.1080/15427951.2013.865686 
+    """
+    if target not in ["node", "edge"]:
+        raise XGIError("Target must be either 'node' or 'edge'.")
+
+    B, itn, ite = to_bipartite_graph(H, index=True)
+
+    hc_bi = nx.harmonic_centrality(B)
+
+    if target == "node":
+        centrality = {n: hc_bi[i] for i, n in itn.items()}
+    else:
+        centrality = {e: hc_bi[i] for i, e in ite.items()}
+
+    sum_centrality = sum(centrality.values())
+    return {k: v / sum_centrality for k, v in centrality.items()}

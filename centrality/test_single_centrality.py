@@ -3,6 +3,7 @@ import time
 import xgi
 import numpy as np
 import os
+from xgi.exception import XGIError
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run tests for XGI centrality algorithms.")
@@ -20,6 +21,12 @@ if __name__ == "__main__":
             centralities = hypergraph.nodes.degree_centrality.asnumpy()
         elif args.measure == "neighbor_degree":
             centralities = hypergraph.nodes.neighbor_degree_centrality.asnumpy()
+        elif args.measure == "closeness":
+            centralities = hypergraph.nodes.closeness_centrality.asnumpy()
+        elif args.measure == "betweenness":
+            centralities = hypergraph.nodes.betweenness_centrality.asnumpy()
+        elif args.measure == "harmonic":
+            centralities = hypergraph.nodes.harmonic_centrality.asnumpy()
         else:
             raise XGIError("Invalid centrality measure for node: ", args.measure)
         time_end = time.time()
@@ -28,12 +35,20 @@ if __name__ == "__main__":
         time_start = time.time()
         if args.measure == "degree":
             centralities = hypergraph.edges.degree_centrality.asnumpy()
+        elif args.measure == "closeness":
+            centralities = hypergraph.edges.closeness_centrality.asnumpy()
+        elif args.measure == "betweenness":
+            centralities = hypergraph.edges.betweenness_centrality.asnumpy()
+        elif args.measure == "harmonic":
+            centralities = hypergraph.edges.harmonic_centrality.asnumpy()
         else:
             raise XGIError("Invalid centrality measure for edge: ", args.measure)
         time_end = time.time()
         print(f"Time taken for edge_{args.measure}: {time_end - time_start} seconds")
 
-    assert np.sum(centralities) == 1
+    tolerance = 1e-6
+    assert np.sum(centralities) < 1 + tolerance
+    assert np.sum(centralities) > 1 - tolerance
 
     if args.edge:
         measure_name = "edge_" + args.measure

@@ -35,7 +35,10 @@ __all__ = [
     "node_edge_centrality",
     "katz_centrality",
     "degree_centrality",
-    "neighbor_degree_centrality"
+    "neighbor_degree_centrality",
+    "closeness_centrality",
+    "betweenness_centrality",
+    "harmonic_centrality",
 ]
 
 
@@ -700,4 +703,76 @@ def neighbor_degree_centrality(net, bunch):
 
     """
     c = xgi.neighbor_degree_centrality(net)
+    return {n: c[n] for n in c if n in bunch}
+
+def closeness_centrality(net, bunch):
+    """Compute the closeness centrality of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities.
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    c = xgi.closeness_centrality(net, target="node")
+    return {n: c[n] for n in c if n in bunch}
+
+def betweenness_centrality(net, bunch):
+    """Compute the betweenness centrality of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities.
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    c = xgi.betweenness_centrality(net, target="node")
+    return {n: c[n] for n in c if n in bunch}
+
+def harmonic_centrality(net, bunch):
+    """Compute the harmonic centrality of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities.
+
+    References
+    ----------
+    Axioms for Centrality,
+    P. Boldi, S. Vigna, 
+    https://doi.org/10.1080/15427951.2013.865686 
+    """
+    c = xgi.harmonic_centrality(net, target="node")
     return {n: c[n] for n in c if n in bunch}
