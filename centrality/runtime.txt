@@ -3,3 +3,13 @@ email-eu edge_degree 0.2395s
 email-eu node_neighbor_degree 0.3456s
 senate-bills edge_degree 0.0186s
 email-enron edge_harmonic 42.2349s
+email-enron node_pagerank 1.8907s
+email-enron edge_pagerank 1.9060s
+email-enron edge_eigenvector 1.8913s
+email-enron node_degree 0.0010s
+email-enron node_neighbor_degree 0.0075s
+email-enron node_harmonic 44.1020s
+senate-bills node_degree 0.0000s
+senate-bills node_neighbor_degree 0.2373s
+senate-bills node_harmonic 633.5386s
+senate-bills node_pagerank 34.6184s

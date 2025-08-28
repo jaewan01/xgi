@@ -15,6 +15,7 @@ from ..linalg import clique_motif_matrix, incidence_matrix
 from ..utils import convert_labels_to_integers, pairwise_incidence, ttsv1, ttsv2
 from .connected import is_connected
 from .properties import is_uniform
+from ..generators.classic import empty_hypergraph
 
 __all__ = [
     "clique_eigenvector_centrality",
@@ -28,7 +29,10 @@ __all__ = [
     "neighbor_degree_centrality",
     "closeness_centrality",
     "betweenness_centrality",
-    "harmonic_centrality"
+    "harmonic_centrality",
+    "eigenvector_centrality",
+    "pagerank_centrality",
+    "uplift_eigenvector_centrality"
 ]
 
 def clique_eigenvector_centrality(H, tol=1e-6):
@@ -747,3 +751,169 @@ def harmonic_centrality(H, target="node"):
 
     sum_centrality = sum(centrality.values())
     return {k: v / sum_centrality for k, v in centrality.items()}
+
+def eigenvector_centrality(H, target="node", max_iter=100, tol=1e-6):
+    """Compute the eigenvector centrality of a hypergraph.
+
+    Parameters
+    ----------
+    H : xgi.Hypergraph
+        The hypergraph of interest.
+    target : str
+        The target of centrality computation. By default, "node".
+    max_iter : int, optional
+        Number of iterations at which the algorithm terminates
+        if convergence is not reached. By default, 100.
+    tol : float > 0, optional
+        The total allowable error in the node and edge centralities.
+        By default, 1e-6.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node (or edge) IDs and values are centralities.
+        The centralities are 1-normalized (sum to 1).
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    if target not in ["node", "edge"]:
+        raise XGIError("Target must be either 'node' or 'edge'.")
+
+    B, itn, ite = to_bipartite_graph(H, index=True)
+
+    ec_bi = nx.eigenvector_centrality(B, max_iter=max_iter, tol=tol)
+
+    if target == "node":
+        centrality = {n: ec_bi[i] for i, n in itn.items()}
+    else:
+        centrality = {e: ec_bi[i] for i, e in ite.items()}
+
+    sum_centrality = sum(centrality.values())
+    return {k: v / sum_centrality for k, v in centrality.items()}
+
+def pagerank_centrality(H, target="node", alpha=0.9, max_iter=100, tol=1e-6):
+    """Compute the PageRank centrality of a hypergraph.
+
+    Parameters
+    ----------
+    H : xgi.Hypergraph
+        The hypergraph of interest.
+    target : str
+        The target of centrality computation. By default, "node".
+    alpha : float, default 0.9
+        Teleportation parameter (1 - alpha is the teleport probability).
+    max_iter : int, optional
+        Number of iterations at which the algorithm terminates
+        if convergence is not reached. By default, 100.
+    tol : float > 0, optional
+        The total allowable error in the node and edge centralities.
+        By default, 1e-6.
+
+    Returns
+    -------
+    dict
+        Centrality, mapping node (or edge) IDs to scores.
+        The scores are 1-normalized (sum to 1) over the selected target set.
+
+    References
+    ----------
+    The PageRank Citation Ranking: Bringing Order to the Web,
+    L. Page, S. Brin, R. Motwani, T. Winograd 
+    """
+    if target not in ["node", "edge"]:
+        raise XGIError("Target must be either 'node' or 'edge'.")
+
+    B, itn, ite = to_bipartite_graph(H, index=True)
+
+    pr_bi = nx.pagerank(B, alpha=alpha, max_iter=max_iter, tol=tol)
+
+    # Extract one mode and renormalize to sum to 1 within that mode
+    if target == "node":
+        centrality = {n: pr_bi[i] for i, n in itn.items()}
+    else:
+        centrality = {e: pr_bi[i] for i, e in ite.items()}
+
+    sum_centrality = sum(centrality.values())
+    return {k: v / sum_centrality for k, v in centrality.items()}
+
+def uplift_eigenvector_centrality(H, m=None, aux_prefix="__aux__", max_iter=100, tol=1e-6):
+    """Compute uplifted H-eigenvector centrality for a hypergraph.
+
+    Parameters
+    ----------
+    H : xgi.Hypergraph
+        The hypergraph of interest. Can be non-uniform.
+    m : int or None, default None
+        Target uniform order. If None, uses max hyperedge size of H.
+        Must satisfy m >= max_e |e|.
+    aux_prefix : str, default "__aux__"
+        Prefix for synthetic auxiliary node labels introduced by the uplift.
+        Different auxiliary nodes are created per missing slot to reach order m.
+    max_iter : int, optional
+        Number of iterations at which the algorithm terminates
+        if convergence is not reached. By default, 100.
+    tol : float > 0, optional
+        The total allowable error in the node and edge centralities.
+        By default, 1e-6.
+
+    Returns
+    -------
+    dict
+        Centrality, mapping node (or edge) IDs to scores.
+        The scores are 1-normalized (sum to 1) over the selected target set.
+
+    References
+    ----------
+    Uplifting edges in higher order networks: spectral centralities for non-uniform hypergraphs,
+    G. Contreras-Aso, C. Pérez-Corral, M. Romance,
+    https://doi.org/10.3934/math.20241539
+
+    """
+
+    # Choose target order
+    max_size = H.edges.size.max() if H.num_edges > 0 else 0
+    if m is None:
+        m = max_size
+    if m < max_size:
+        raise XGIError(f"m must be >= max hyperedge size ({max_size}); got m={m}.")
+
+    # If already uniform at order m, just run your uniform H-EC and return
+    if H.num_edges > 0 and all(len(e) == m for e in H.edges.members()):
+        hec = uniform_h_eigenvector_centrality(H, max_iter=max_iter, tol=tol)
+        # Restrict to original nodes and 1-normalize (already only originals)
+        s = sum(hec.values())
+        return {k: (v / s if s > 0 else 0.0) for k, v in hec.items()}
+
+    # Build uplifted m-uniform hypergraph
+    # We create unique auxiliary nodes per deficit slot to keep edges as sets.
+    # (E.g., if |e|=s, add aux_prefix+"<edge_id>_<j>" for j in range(m-s))
+    He = empty_hypergraph()
+    # Copy all original nodes first to keep labels
+    He.add_nodes_from(H.nodes)
+
+    # Provide a stable id per edge for unique aux labels
+    # We rely on H.edges.members(dtype=dict) to get {edge_id: set_of_nodes}
+    edge_members = H.edges.members(dtype=dict)
+    for eid, nodeset in edge_members.items():
+        s = len(nodeset)
+        if s > m:
+            raise XGIError(f"Edge {eid} has size {s} > m={m}. Choose a larger m.")
+        if s == m:
+            He.add_edge(nodeset)
+        else:
+            deficit = m - s
+            aux_nodes = [f"{aux_prefix}{eid}_{j}" for j in range(deficit)]
+            He.add_nodes_from(aux_nodes)
+            He.add_edge(set(nodeset) | set(aux_nodes))
+
+    # Now compute H-eigenvector centrality on uniform uplifted hypergraph
+    hec_uplift = uniform_h_eigenvector_centrality(He, max_iter=max_iter, tol=tol)
+
+    # Restrict back to ORIGINAL nodes only and 1-normalize over them
+    raw = {n: hec_uplift.get(n, 0.0) for n in H.nodes}
+    s = sum(raw.values())
+    return {k: v / s  for k, v in raw.items()}

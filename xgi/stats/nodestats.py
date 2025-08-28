@@ -39,6 +39,9 @@ __all__ = [
     "closeness_centrality",
     "betweenness_centrality",
     "harmonic_centrality",
+    "eigenvector_centrality",
+    "pagerank_centrality",
+    "uplift_eigenvector_centrality"
 ]
 
 
@@ -675,7 +678,6 @@ def degree_centrality(net, bunch):
     Returns
     -------
     dict
-        Centrality, where keys are node IDs and values are centralities.
 
     References
     ----------
@@ -699,7 +701,6 @@ def neighbor_degree_centrality(net, bunch):
     Returns
     -------
     dict
-        Centrality, where keys are node IDs and values are centralities.
 
     """
     c = xgi.neighbor_degree_centrality(net)
@@ -718,7 +719,6 @@ def closeness_centrality(net, bunch):
     Returns
     -------
     dict
-        Centrality, where keys are node IDs and values are centralities.
 
     References
     ----------
@@ -742,7 +742,6 @@ def betweenness_centrality(net, bunch):
     Returns
     -------
     dict
-        Centrality, where keys are node IDs and values are centralities.
 
     References
     ----------
@@ -766,7 +765,6 @@ def harmonic_centrality(net, bunch):
     Returns
     -------
     dict
-        Centrality, where keys are node IDs and values are centralities.
 
     References
     ----------
@@ -775,4 +773,99 @@ def harmonic_centrality(net, bunch):
     https://doi.org/10.1080/15427951.2013.865686 
     """
     c = xgi.harmonic_centrality(net, target="node")
+    return {n: c[n] for n in c if n in bunch}
+
+def eigenvector_centrality(net, bunch, max_iter=100, tol=1e-6):
+    """Compute the eigenvector centrality of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+    max_iter : int, optional
+        Number of iterations at which the algorithm terminates
+        if convergence is not reached. By default, 100.
+    tol : float > 0, optional
+        The total allowable error in the node and edge centralities.
+        By default, 1e-6.
+
+    Returns
+    -------
+    dict
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    c = xgi.eigenvector_centrality(net, target="node", max_iter=max_iter, tol=tol)
+    return {n: c[n] for n in c if n in bunch}
+
+def pagerank_centrality(net, bunch, alpha=0.9, max_iter=100, tol=1e-6):
+    """Compute the PageRank centrality of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+    alpha : float, default 0.9
+        Teleportation parameter (1 - alpha is the teleport probability).
+    max_iter : int, optional
+        Number of iterations at which the algorithm terminates
+        if convergence is not reached. By default, 100.
+    tol : float > 0, optional
+        The total allowable error in the node and edge centralities.
+        By default, 1e-6.
+
+    Returns
+    -------
+    dict
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    c = xgi.eigenvector_centrality(net, target="node", max_iter=max_iter, tol=tol)
+    return {n: c[n] for n in c if n in bunch}
+
+def uplift_eigenvector_centrality(net, bunch, m=None, aux_prefix="__aux__", max_iter=100, tol=1e-6):
+    """Compute uplifted H-eigenvector centrality for a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+    m : int or None, default None
+        Target uniform order. If None, uses max hyperedge size of H.
+        Must satisfy m >= max_e |e|.
+    aux_prefix : str, default "__aux__"
+        Prefix for synthetic auxiliary node labels introduced by the uplift.
+        Different auxiliary nodes are created per missing slot to reach order m.
+    max_iter : int, optional
+        Number of iterations at which the algorithm terminates
+        if convergence is not reached. By default, 100.
+    tol : float > 0, optional
+        The total allowable error in the node and edge centralities.
+        By default, 1e-6.
+
+    Returns
+    -------
+    dict
+
+    References
+    ----------
+    Uplifting edges in higher order networks: spectral centralities for non-uniform hypergraphs,
+    G. Contreras-Aso, C. Pérez-Corral, M. Romance,
+    https://doi.org/10.3934/math.20241539
+    """
+    c = xgi.uplift_eigenvector_centrality(net, m=m, aux_prefix=aux_prefix, max_iter=max_iter, tol=tol)
     return {n: c[n] for n in c if n in bunch}

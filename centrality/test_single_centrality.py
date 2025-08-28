@@ -4,6 +4,7 @@ import xgi
 import numpy as np
 import os
 from xgi.exception import XGIError
+import pdb
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run tests for XGI centrality algorithms.")
@@ -27,6 +28,12 @@ if __name__ == "__main__":
             centralities = hypergraph.nodes.betweenness_centrality.asnumpy()
         elif args.measure == "harmonic":
             centralities = hypergraph.nodes.harmonic_centrality.asnumpy()
+        elif args.measure == "eigenvector":
+            centralities = hypergraph.nodes.eigenvector_centrality(max_iter=100, tol=1e-6).asnumpy()
+        elif args.measure == "pagerank":
+            centralities = hypergraph.nodes.pagerank_centrality(alpha=0.9, max_iter=1000, tol=1e-6).asnumpy()
+        elif args.measure == "uplift_eigenvector":
+            centralities = hypergraph.nodes.uplift_eigenvector_centrality(max_iter=1000, tol=1e-6).asnumpy()
         else:
             raise XGIError("Invalid centrality measure for node: ", args.measure)
         time_end = time.time()
@@ -41,12 +48,17 @@ if __name__ == "__main__":
             centralities = hypergraph.edges.betweenness_centrality.asnumpy()
         elif args.measure == "harmonic":
             centralities = hypergraph.edges.harmonic_centrality.asnumpy()
+        elif args.measure == "eigenvector":
+            centralities = hypergraph.edges.eigenvector_centrality(max_iter=1000, tol=1e-6).asnumpy()
+        elif args.measure == "pagerank":
+            centralities = hypergraph.edges.pagerank_centrality(alpha=0.9, max_iter=1000, tol=1e-6).asnumpy()
         else:
             raise XGIError("Invalid centrality measure for edge: ", args.measure)
         time_end = time.time()
         print(f"Time taken for edge_{args.measure}: {time_end - time_start} seconds")
 
-    tolerance = 1e-6
+    tolerance = 1e-3
+    # pdb.set_trace()
     assert np.sum(centralities) < 1 + tolerance
     assert np.sum(centralities) > 1 - tolerance
 

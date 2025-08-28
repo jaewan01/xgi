@@ -30,7 +30,9 @@ __all__ = [
     "degree_centrality",
     "closeness_centrality",
     "betweenness_centrality",
-    "harmonic_centrality"
+    "harmonic_centrality",
+    "eigenvector_centrality",
+    "pagerank_centrality"
 ]
 
 
@@ -338,4 +340,60 @@ def harmonic_centrality(net, bunch):
     https://doi.org/10.1080/15427951.2013.865686 
     """
     c = xgi.harmonic_centrality(net, target="edge")
+    return {e: c[e] for e in c if e in bunch}
+
+def eigenvector_centrality(net, bunch, max_iter=100, tol=1e-6):
+    """Compute the eigenvector centrality of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities.
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    c = xgi.eigenvector_centrality(net, target="edge", max_iter=max_iter, tol=tol)
+    return {e: c[e] for e in c if e in bunch}
+
+def pagerank_centrality(net, bunch, alpha=0.9, max_iter=100, tol=1e-6):
+    """Compute the PageRank centrality of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+    alpha : float, default 0.9
+        Teleportation parameter (1 - alpha is the teleport probability).
+    max_iter : int, optional
+        Number of iterations at which the algorithm terminates
+        if convergence is not reached. By default, 100.
+    tol : float > 0, optional
+        The total allowable error in the node and edge centralities.
+        By default, 1e-6.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities.
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    c = xgi.eigenvector_centrality(net, target="edge", max_iter=max_iter, tol=tol)
     return {n: c[n] for n in c if n in bunch}
