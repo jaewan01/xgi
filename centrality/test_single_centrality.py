@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser.add_argument('--edge', default=False, action='store_true', help="Specify if the test is for edge centrality.")
     args = parser.parse_args()
 
-    hypergraph = xgi.load_xgi_data(args.dataset, read=True, path="datasets")
+    hypergraph = xgi.load_xgi_data(args.dataset, read=True, path="datasets_lcc_size_2")
     print("loaded hypergraph ", args.dataset)
 
     if not args.edge:
@@ -29,11 +29,13 @@ if __name__ == "__main__":
         elif args.measure == "harmonic":
             centralities = hypergraph.nodes.harmonic_centrality.asnumpy()
         elif args.measure == "eigenvector":
-            centralities = hypergraph.nodes.eigenvector_centrality(max_iter=100, tol=1e-6).asnumpy()
+            centralities = hypergraph.nodes.eigenvector_centrality(max_iter=1000, tol=1e-6).asnumpy()
         elif args.measure == "pagerank":
             centralities = hypergraph.nodes.pagerank_centrality(alpha=0.9, max_iter=1000, tol=1e-6).asnumpy()
         elif args.measure == "uplift_eigenvector":
             centralities = hypergraph.nodes.uplift_eigenvector_centrality(max_iter=1000, tol=1e-6).asnumpy()
+        elif args.measure == "hypercoreness":
+            centralities = hypergraph.nodes.hypercoreness.asnumpy()
         else:
             raise XGIError("Invalid centrality measure for node: ", args.measure)
         time_end = time.time()
@@ -42,6 +44,8 @@ if __name__ == "__main__":
         time_start = time.time()
         if args.measure == "degree":
             centralities = hypergraph.edges.degree_centrality.asnumpy()
+        elif args.measure == "line_expansion_degree":
+            centralities = hypergraph.edges.line_expansion_degree_centrality.asnumpy()
         elif args.measure == "closeness":
             centralities = hypergraph.edges.closeness_centrality.asnumpy()
         elif args.measure == "betweenness":
@@ -52,6 +56,8 @@ if __name__ == "__main__":
             centralities = hypergraph.edges.eigenvector_centrality(max_iter=1000, tol=1e-6).asnumpy()
         elif args.measure == "pagerank":
             centralities = hypergraph.edges.pagerank_centrality(alpha=0.9, max_iter=1000, tol=1e-6).asnumpy()
+        elif args.measure == "hypercoreness":
+            centralities = hypergraph.edges.hypercoreness.asnumpy()
         else:
             raise XGIError("Invalid centrality measure for edge: ", args.measure)
         time_end = time.time()

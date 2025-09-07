@@ -28,11 +28,13 @@ __all__ = [
     "size",
     "node_edge_centrality",
     "degree_centrality",
+    "line_expansion_degree_centrality",
     "closeness_centrality",
     "betweenness_centrality",
     "harmonic_centrality",
     "eigenvector_centrality",
-    "pagerank_centrality"
+    "pagerank_centrality",
+    "hypercoreness"
 ]
 
 
@@ -270,6 +272,30 @@ def degree_centrality(net, bunch):
     c = xgi.degree_centrality(net, target="edge")
     return {e: c[e] for e in c if e in bunch}
 
+def line_expansion_degree_centrality(net, bunch):
+    """Compute the line-expansion degree centrality of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities.
+
+    References
+    ----------
+    Centrality in affiliation networks,
+    Katherine Faust,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+    c = xgi.line_expansion_degree_centrality(net)
+    return {e: c[e] for e in c if e in bunch}
+
 def closeness_centrality(net, bunch):
     """Compute the closeness centrality of a hypergraph.
 
@@ -396,4 +422,27 @@ def pagerank_centrality(net, bunch, alpha=0.9, max_iter=100, tol=1e-6):
     https://doi.org/10.1016/S0378-8733(96)00300-0
     """
     c = xgi.eigenvector_centrality(net, target="edge", max_iter=max_iter, tol=tol)
-    return {n: c[n] for n in c if n in bunch}
+    return {e: c[e] for e in c if e in bunch}
+
+def hypercoreness(net, bunch):
+    """Compute the hypercoreness of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+
+    Returns
+    -------
+    dict
+
+    References
+    ----------
+    Axioms for Centrality,
+    P. Boldi, S. Vigna, 
+    https://doi.org/10.1080/15427951.2013.865686 
+    """
+    c = xgi.hypercoreness(net, target="edge")
+    return {e: c[e] for e in c if e in bunch}

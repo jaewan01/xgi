@@ -41,7 +41,8 @@ __all__ = [
     "harmonic_centrality",
     "eigenvector_centrality",
     "pagerank_centrality",
-    "uplift_eigenvector_centrality"
+    "uplift_eigenvector_centrality",
+    "hypercoreness"
 ]
 
 
@@ -832,7 +833,7 @@ def pagerank_centrality(net, bunch, alpha=0.9, max_iter=100, tol=1e-6):
     Katherine Faust,
     https://doi.org/10.1016/S0378-8733(96)00300-0
     """
-    c = xgi.eigenvector_centrality(net, target="node", max_iter=max_iter, tol=tol)
+    c = xgi.pagerank_centrality(net, target="node", max_iter=max_iter, tol=tol)
     return {n: c[n] for n in c if n in bunch}
 
 def uplift_eigenvector_centrality(net, bunch, m=None, aux_prefix="__aux__", max_iter=100, tol=1e-6):
@@ -868,4 +869,27 @@ def uplift_eigenvector_centrality(net, bunch, m=None, aux_prefix="__aux__", max_
     https://doi.org/10.3934/math.20241539
     """
     c = xgi.uplift_eigenvector_centrality(net, m=m, aux_prefix=aux_prefix, max_iter=max_iter, tol=tol)
+    return {n: c[n] for n in c if n in bunch}
+
+def hypercoreness(net, bunch):
+    """Compute the hypercoreness of a hypergraph.
+
+    Parameters
+    ----------
+    net : xgi.Hypergraph
+        The hypergraph of interest.
+    bunch : Iterable
+        Nodes in `net`.
+
+    Returns
+    -------
+    dict
+
+    References
+    ----------
+    Axioms for Centrality,
+    P. Boldi, S. Vigna, 
+    https://doi.org/10.1080/15427951.2013.865686 
+    """
+    c = xgi.hypercoreness(net, target="node")
     return {n: c[n] for n in c if n in bunch}

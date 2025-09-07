@@ -8,8 +8,11 @@ from numpy.linalg import norm
 from scipy.sparse.linalg import eigsh
 
 import pdb
+import itertools
+from itertools import compress
 
-from ..convert import to_line_graph, to_bipartite_graph
+from ..core import subhypergraph
+from ..convert import to_line_graph, to_bipartite_graph, from_hyperedge_list
 from ..exception import XGIError
 from ..linalg import clique_motif_matrix, incidence_matrix
 from ..utils import convert_labels_to_integers, pairwise_incidence, ttsv1, ttsv2
@@ -27,12 +30,14 @@ __all__ = [
     "uniform_h_eigenvector_centrality",
     "degree_centrality",
     "neighbor_degree_centrality",
+    "line_expansion_degree_centrality",
     "closeness_centrality",
     "betweenness_centrality",
     "harmonic_centrality",
     "eigenvector_centrality",
     "pagerank_centrality",
-    "uplift_eigenvector_centrality"
+    "uplift_eigenvector_centrality",
+    "hypercoreness"
 ]
 
 def clique_eigenvector_centrality(H, tol=1e-6):
@@ -635,6 +640,35 @@ def neighbor_degree_centrality(H):
 
     return centrality
 
+def line_expansion_degree_centrality(H):
+    """Compute the line-expansion degree centrality of a hypergraph.
+
+    Parameters
+    ----------
+    H : Hypergraph
+        The hypergraph of interest.
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node IDs and values are centralities. The
+        centralities are 1-normalized.
+
+    """
+
+    line_expansion = to_line_graph(H)
+
+    edges = line_expansion.nodes
+    centrality = dict()
+
+    for e in edges:
+        centrality[e] = line_expansion.degree(e)
+    
+    sum_centrality = sum(centrality.values())
+    centrality = {e: v / sum_centrality for e, v in centrality.items()}
+
+    return centrality
+
 def closeness_centrality(H, target="node"):
     """Compute the closeness centrality of a hypergraph. 
 
@@ -917,3 +951,111 @@ def uplift_eigenvector_centrality(H, m=None, aux_prefix="__aux__", max_iter=100,
     raw = {n: hec_uplift.get(n, 0.0) for n in H.nodes}
     s = sum(raw.values())
     return {k: v / s  for k, v in raw.items()}
+
+def hypercoreness(H, target="node"):
+    """Compute hypercoreness for a hypergraph.
+
+    Parameters
+    ----------
+    H : xgi.Hypergraph
+        The hypergraph of interest. Can be non-uniform.
+    target : str
+        The target of centrality computation. By default, "node".
+
+    Returns
+    -------
+    dict
+        Centrality, where keys are node (or edge) IDs and values are centralities.
+        The centralities are 1-normalized (sum to 1).
+
+    References
+    ----------
+    An O(m) algorithm for cores decomposition of undirected hypergraph,
+    Ming Leng, Ling-yu SUN, Ji-nian Bian, and Yu-chun,
+    https://doi.org/10.1016/S0378-8733(96)00300-0
+    """
+
+    n = H.num_nodes
+
+    k_shell_dict={}
+    idx_n = list(H.nodes)
+
+    max_degree = H.nodes.degree.max()
+
+    idx_n_remove = []
+
+    prev_shell=[]
+
+    k_shell_dict_edge={}
+    idx_e = list(H.edges)
+
+    idx_e_remove = []
+
+    for k in range(1, max_degree):
+
+        idx_to_keep = []
+        for idx in idx_n:
+            if idx not in idx_n_remove:
+                idx_to_keep.append(idx)
+
+        subhyper = subhypergraph(H, nodes=idx_to_keep)
+        
+        d_tot_m = np.zeros(n)
+
+        for i in range(n):
+            idx = idx_n[i]
+            if idx in subhyper.nodes:
+                d_tot_m[i] = subhyper.degree(idx_n[i])
+
+        cur_idx_n_remove_all = list(compress(idx_n, np.greater(k * np.ones(len(d_tot_m)),d_tot_m))) #nodes with degree<k are removed
+        cur_idx_n_remove = []
+        for idx in cur_idx_n_remove_all:
+            if idx not in idx_n_remove:
+                cur_idx_n_remove.append(idx)
+        idx_n_remove = idx_n_remove + cur_idx_n_remove
+
+        while len(cur_idx_n_remove)>0:
+            idx_to_keep = []
+            for idx in idx_n:
+                if idx not in idx_n_remove:
+                    idx_to_keep.append(idx)
+
+            subhyper = subhypergraph(H, nodes=idx_to_keep)
+
+            d_tot_m = np.zeros(n)
+            
+            for i in range(n):
+                idx = idx_n[i]
+                if idx in subhyper.nodes:
+                    d_tot_m[i] = subhyper.degree(idx)
+
+            cur_idx_n_remove_all = list(compress(idx_n, np.greater(k * np.ones(len(d_tot_m)),d_tot_m))) #nodes with degree<k are removed
+            cur_idx_n_remove = []
+            for idx in cur_idx_n_remove_all:
+                if idx not in idx_n_remove:
+                    cur_idx_n_remove.append(idx)
+
+            idx_n_remove = idx_n_remove + cur_idx_n_remove
+
+        shell_k = list(sorted(set(idx_n_remove) - set(prev_shell)))
+        for j in shell_k:
+            k_shell_dict[j]=k
+
+        if target == "edge":
+            cur_idx_e = list(subhyper.edges)
+            for idx in cur_idx_e:
+                if idx not in idx_e_remove:
+                    k_shell_dict_edge[idx] = k
+            idx_e_remove = idx_e_remove + cur_idx_e
+
+        prev_shell = prev_shell + shell_k
+
+        if len(idx_n_remove) == n:
+            break
+    
+    if target == "node":
+        s = sum(k_shell_dict.values())
+        return {k: v / s  for k, v in k_shell_dict.items()}
+    if target == "edge":
+        s = sum(k_shell_dict_edge.values())
+        return {k: v / s  for k, v in k_shell_dict_edge.items()}

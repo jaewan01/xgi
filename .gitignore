@@ -155,4 +155,6 @@ test.*
 output.json
 
 centrality/datasets/*
+centrality/datasets_lcc/*
+centrality/datasets_lcc_size_2/*
 !centrality/datasets/statistics.xlsx
